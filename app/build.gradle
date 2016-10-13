@@ -43,11 +43,7 @@ dependencies {
     compile 'com.jakewharton:butterknife:8.4.0'
     annotationProcessor 'com.jakewharton:butterknife-compiler:8.4.0'
 
-    def jersieVersion = "1.19.2"
-    compile "com.sun.jersey:jersey-client:$jersieVersion"
-    compile "com.sun.jersey:jersey-core:$jersieVersion"
     compile "joda-time:joda-time:2.9.4"
-
 
     testCompile 'junit:junit:4.12'
     testCompile "org.robolectric:robolectric:3.1.2"
