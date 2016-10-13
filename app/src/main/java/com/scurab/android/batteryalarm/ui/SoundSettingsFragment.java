@@ -5,8 +5,11 @@ import android.media.AudioManager;
 import android.media.ToneGenerator;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.design.widget.TextInputEditText;
+import android.support.design.widget.TextInputLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.util.Pair;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,12 +22,17 @@ import com.scurab.android.batteryalarm.R;
 import com.scurab.android.batteryalarm.drawable.CircleTextDrawable;
 import com.scurab.android.batteryalarm.widget.SeekBar;
 
+import org.joda.time.LocalTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+
 import java.util.ArrayList;
 import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import butterknife.OnTextChanged;
 
 /**
  * Created by JBruchanov on 13/10/2016.
@@ -38,8 +46,15 @@ public class SoundSettingsFragment extends Fragment {
     @BindView(R.id.tone_volume)
     SeekBar mToneVolume;
 
+    @BindView(R.id.tone_time_input_layout)
+    TextInputLayout mTextInputLayout;
+
+    @BindView(R.id.tone_time)
+    TextInputEditText mToneTime;
+
     private ToneGenerator mToneGenerator;
     private int mLastPlayedVolume;
+    private DateTimeFormatter mTimeParser = DateTimeFormat.forPattern("HH:mm");
 
     @Override
     public void onDestroy() {
@@ -68,6 +83,30 @@ public class SoundSettingsFragment extends Fragment {
         thumb.getTextPaint().setColor(res.getColor(R.color.colorAccentText));
         mToneVolume.setThumb(thumb);
         mToneVolume.setMax(ToneGenerator.MAX_VOLUME);
+    }
+
+    @OnTextChanged(R.id.tone_time)
+    void onTimeChanged(CharSequence s, int start, int before, int count) {
+        String range = s.toString();
+        boolean isOk = s.length() == 0;
+        int divider = range.indexOf("-");
+        if (divider > 0 && range.length() > divider) {
+            String startTime = range.substring(0, divider).trim();
+            String endTime = range.substring(divider + 1).trim();
+            if (startTime.length() >= 3 && endTime.length() >= 3) {
+                try {
+                    LocalTime st = mTimeParser.parseLocalTime(startTime);
+                    LocalTime et = mTimeParser.parseLocalTime(endTime);
+                    isOk = true;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        mTextInputLayout.setErrorEnabled(!isOk);
+        if (!isOk) {
+            mTextInputLayout.setError(getString(R.string.err_invalid_time_range));
+        }
     }
 
     @OnClick(R.id.tone_play)

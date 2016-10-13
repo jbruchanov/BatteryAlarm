@@ -37,13 +37,17 @@ dependencies {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
 
-    compile 'com.android.support:appcompat-v7:24.2.1'
+    def supportLib = "24.2.1";
+    compile "com.android.support:appcompat-v7:$supportLib"
+    compile "com.android.support:design:$supportLib"
     compile 'com.jakewharton:butterknife:8.4.0'
     annotationProcessor 'com.jakewharton:butterknife-compiler:8.4.0'
 
     def jersieVersion = "1.19.2"
     compile "com.sun.jersey:jersey-client:$jersieVersion"
     compile "com.sun.jersey:jersey-core:$jersieVersion"
+    compile "joda-time:joda-time:2.9.4"
+
 
     testCompile 'junit:junit:4.12'
     testCompile "org.robolectric:robolectric:3.1.2"

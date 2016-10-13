@@ -44,8 +44,30 @@
         android:id="@+id/tone_volume"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:progress="100"
         android:maxHeight="@dimen/button_min_size"
-        android:minHeight="@dimen/button_min_size"/>
+        android:minHeight="@dimen/button_min_size"
+        android:progress="100"/>
 
+    <android.support.design.widget.TextInputLayout
+        android:id="@+id/tone_time_input_layout"
+        app:errorEnabled="true"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <android.support.design.widget.TextInputEditText
+            android:id="@+id/tone_time"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:digits="0123456789:- "
+            android:hint="@string/format_tone_text"/>
+
+    </android.support.design.widget.TextInputLayout>
+
+    <CheckBox
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        android:minHeight="@dimen/button_min_size"
+        android:text="@string/weekends"/>
 </LinearLayout>

@@ -4,4 +4,8 @@
     <string name="sound_notification">Sound Notification</string>
     <string name="tone">Tone</string>
     <string name="volume">Volume</string>
+    <string name="enabled_time">Enabled Time [From/To]</string>
+    <string name="weekends">Weekends</string>
+    <string name="format_tone_text">Enabled Time [From/To] (6:00 - 22:00)</string>
+    <string name="err_invalid_time_range">Invalid time range</string>
 </resources>
