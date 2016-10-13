@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">BatteryAlarm</string>
+    <string name="stop">Stop</string>
+    <string name="sound_notification">Sound Notification</string>
+    <string name="tone">Tone</string>
+    <string name="volume">Volume</string>
+</resources>
