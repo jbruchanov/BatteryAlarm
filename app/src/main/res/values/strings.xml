@@ -8,4 +8,11 @@
     <string name="weekends">Weekends</string>
     <string name="format_tone_text">Enabled Time [From/To] (6:00 - 22:00)</string>
     <string name="err_invalid_time_range">Invalid time range</string>
+    <string name="send_mail">Send mail</string>
+    <string name="mailgun_key">Mailgun Key</string>
+    <string name="device_name">Device Name</string>
+    <string name="mailgun_domain">Mailgun Domain</string>
+    <string name="mailgun_recepient">Recepient</string>
+    <string name="send_test_mail">Send test mail</string>
+    <string name="send_test_mail_sending">Sending...</string>
 </resources>

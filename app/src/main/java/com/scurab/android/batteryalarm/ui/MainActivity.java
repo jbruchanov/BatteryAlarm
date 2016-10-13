@@ -24,6 +24,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
         mTabHost.setup(this, getSupportFragmentManager(), android.R.id.tabcontent);
-        mTabHost.addTab(mTabHost.newTabSpec("SoundSettingsFragment").setIndicator("A"), SoundSettingsFragment.class, null);
+        mTabHost.addTab(mTabHost.newTabSpec("SoundSettingsFragment").setIndicator("Tone"), SoundSettingsFragment.class, null);
+        mTabHost.addTab(mTabHost.newTabSpec("MailGunFragment").setIndicator("Mail"), MailGunFragment.class, null);
     }
 }
