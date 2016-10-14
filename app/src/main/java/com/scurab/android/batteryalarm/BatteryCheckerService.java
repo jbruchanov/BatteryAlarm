@@ -16,8 +16,10 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
-import com.scurab.android.batteryalarm.ui.MainActivity;
+import com.scurab.android.batteryalarm.app.MainActivity;
+import com.scurab.android.batteryalarm.model.Settings;
 import com.scurab.android.batteryalarm.util.BatteryHelper;
+import com.scurab.android.batteryalarm.util.MailGun;
 
 /**
  * Created by JBruchanov on 11/10/2016.
@@ -50,7 +52,13 @@ public class BatteryCheckerService extends Service {
             mWakeLock = null;
         }
         if (mWifiLock != null) {
-            mWifiLock.release();
+            if (mWifiLock.isHeld()) {
+                try {
+                    mWifiLock.release();
+                } catch (Throwable e) {
+                    e.printStackTrace();
+                }
+            }
             mWifiLock = null;
         }
     }
@@ -112,26 +120,40 @@ public class BatteryCheckerService extends Service {
     }
 
     private static class BatteryThread extends Thread {
+        static final int MAIL_SENT = 2;
+        static final int MAIL_SENDING = 1;
+        static final int MAIL_TO_SEND = 0;
 
         public static final String TAG = "BatteryThread";
+        private static final int MINUTE = 60 * 1000;
         private final int mSleepWait;
         private final ToneGenerator mToneGenerator;
+        private final Settings mSettings;
         private boolean mIsStopped = false;
         private final Object mToken = new Object();
         private final Context mContext;
+        private int mMailNotificationState = MAIL_TO_SEND;
 
         public BatteryThread(@NonNull Context context, int sleepWait) {
             mContext = context;
             mSleepWait = sleepWait;
-            mToneGenerator = new ToneGenerator(AudioManager.STREAM_ALARM, ToneGenerator.MAX_VOLUME);
+            mSettings = ((BatteryAlarmApp) (context.getApplicationContext())).getSettings();
+            mToneGenerator = new ToneGenerator(AudioManager.STREAM_ALARM, mSettings.getToneVolume());
         }
 
         @Override
         public void run() {
             while (!mIsStopped) {
                 Log.d(TAG, String.format("BatteryLevel:%.2f, IsCharging:%s", BatteryHelper.getBatteryLevel(mContext), BatteryHelper.isCharging(mContext)));
-                mToneGenerator.startTone(ToneGenerator.TONE_CDMA_HIGH_L, 4000);
-                sleep();
+                boolean sound = mSettings.isSoundNotification() && mSettings.shouldStartTone();
+                if (sound) {
+                    mToneGenerator.startTone(mSettings.getToneValue(), 4000);
+                }
+                if (mSettings.isMailNotification() && mMailNotificationState == MAIL_TO_SEND) {
+                    mMailNotificationState = MAIL_SENDING;
+                    MailGun.sendNotificationAsync(mSettings.getDeviceName(), mSettings.getMailGunKey(), mSettings.getMailGunDomain(), mSettings.getMailGunRecipient(), mMailCallback);
+                }
+                sleep(sound ? mSleepWait : MINUTE);
             }
             mToneGenerator.release();
             if (BuildConfig.DEBUG) {
@@ -139,13 +161,13 @@ public class BatteryCheckerService extends Service {
             }
         }
 
-        private void sleep() {
+        private void sleep(int time) {
             synchronized (mToken) {
                 try {
                     if (BuildConfig.DEBUG) {
-                        Log.d(TAG, String.format("BatteryThread is going to sleep for: %sms", mSleepWait));
+                        Log.d(TAG, String.format("BatteryThread is going to sleep for: %sms", time));
                     }
-                    mToken.wait(mSleepWait);
+                    mToken.wait(time);
                     if (BuildConfig.DEBUG) {
                         Log.d(TAG, "BatteryThread awoken");
                     }
@@ -163,5 +185,7 @@ public class BatteryCheckerService extends Service {
                 }
             }
         }
+
+        private MailGun.Callback mMailCallback = (response, ex) -> mMailNotificationState = response ? MAIL_SENT : MAIL_TO_SEND;
     }
 }
