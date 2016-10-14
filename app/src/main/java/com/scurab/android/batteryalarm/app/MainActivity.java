@@ -1,4 +1,4 @@
-package com.scurab.android.batteryalarm.ui;
+package com.scurab.android.batteryalarm.app;
 
 import android.os.Bundle;
 import android.support.v4.app.FragmentTabHost;
