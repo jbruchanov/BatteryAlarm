@@ -4,6 +4,7 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 24
     buildToolsVersion "24.0.3"
+    compileOptions.incremental = false;
     defaultConfig {
         applicationId "com.scurab.android.batteryalarm"
         minSdkVersion 14
@@ -44,6 +45,8 @@ dependencies {
     annotationProcessor 'com.jakewharton:butterknife-compiler:8.4.0'
 
     compile "joda-time:joda-time:2.9.4"
+    compile 'com.google.code.gson:gson:2.7'
+
 
     testCompile 'junit:junit:4.12'
     testCompile "org.robolectric:robolectric:3.1.2"
