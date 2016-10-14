@@ -6,9 +6,9 @@
               android:orientation="vertical">
 
     <CheckBox
+        android:id="@+id/send_mail"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:checked="true"
         android:minHeight="@dimen/button_min_size"
         android:text="@string/send_mail"/>
 
