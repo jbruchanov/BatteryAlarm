@@ -1,29 +1,27 @@
-package com.scurab.android.batteryalarm.ui;
+package com.scurab.android.batteryalarm.app;
 
 import android.content.res.Resources;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.TextInputEditText;
 import android.support.design.widget.TextInputLayout;
-import android.support.v4.app.Fragment;
 import android.support.v4.util.Pair;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.CheckBox;
 import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.scurab.android.batteryalarm.R;
 import com.scurab.android.batteryalarm.drawable.CircleTextDrawable;
+import com.scurab.android.batteryalarm.model.Settings;
 import com.scurab.android.batteryalarm.widget.SeekBar;
-
-import org.joda.time.LocalTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +35,7 @@ import butterknife.OnTextChanged;
  * Created by JBruchanov on 13/10/2016.
  */
 
-public class SoundSettingsFragment extends Fragment {
+public class SoundSettingsFragment extends BaseFragment {
 
     @BindView(R.id.tone_spinner)
     Spinner mToneSpinner;
@@ -51,9 +49,14 @@ public class SoundSettingsFragment extends Fragment {
     @BindView(R.id.tone_time)
     TextInputEditText mToneTime;
 
+    @BindView(R.id.sound_notification)
+    CheckBox mSoundNotification;
+
+    @BindView(R.id.weekends)
+    CheckBox mWeekends;
+
     private ToneGenerator mToneGenerator;
     private int mLastPlayedVolume;
-    private DateTimeFormatter mTimeParser = DateTimeFormat.forPattern("HH:mm");
 
     @Override
     public void onDestroy() {
@@ -82,30 +85,69 @@ public class SoundSettingsFragment extends Fragment {
         thumb.getTextPaint().setColor(res.getColor(R.color.colorAccentText));
         mToneVolume.setThumb(thumb);
         mToneVolume.setMax(ToneGenerator.MAX_VOLUME);
+        bindData();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        saveData();
+    }
+
+    private void bindData() {
+        Settings settings = getSettings();
+        mSoundNotification.setChecked(settings.isSoundNotification());
+        ToneAdapter adapter = (ToneAdapter) mToneSpinner.getAdapter();
+        mToneSpinner.setSelection(Math.max(0, Math.min(adapter.getCount() - 1, adapter.getIndexOf(settings.getToneValue()))));
+        mToneVolume.setProgress(settings.getToneVolume());
+        if (settings.getStartTime() != null && settings.getEndTime() != null) {
+            mToneTime.setText(String.format("%s - %s", settings.getStartTime(), settings.getEndTime()));
+        }
+        mWeekends.setChecked(settings.isWeekends());
+    }
+
+    private void saveData() {
+        Settings settings = getSettings();
+        settings.setSoundNotification(mSoundNotification.isChecked());
+        ToneAdapter adapter = (ToneAdapter) mToneSpinner.getAdapter();
+        settings.setToneValue(adapter.getItem(mToneSpinner.getSelectedItemPosition()).second);
+        settings.setToneVolume(mToneVolume.getProgress());
+        String[] times = parseTimes(mToneTime.getText().toString());
+        if (times != null) {
+            settings.setStartTime(times[0]);
+            settings.setEndTime(times[1]);
+        }
+        settings.setWeekends(mWeekends.isChecked());
     }
 
     @OnTextChanged(R.id.tone_time)
     void onTimeChanged(CharSequence s, int start, int before, int count) {
-        String range = s.toString();
-        boolean isOk = s.length() == 0;
-        int divider = range.indexOf("-");
-        if (divider > 0 && range.length() > divider) {
-            String startTime = range.substring(0, divider).trim();
-            String endTime = range.substring(divider + 1).trim();
+        String value = s.toString();
+        boolean isOk = value.length() == 0;
+        isOk |= parseTimes(value) != null;
+        mTextInputLayout.setErrorEnabled(!isOk);
+        if (!isOk) {
+            mTextInputLayout.setError(getString(R.string.err_invalid_time_range));
+        }
+    }
+
+    public String[] parseTimes(@NonNull String value) {
+        int divider = value.indexOf("-");
+        String[] result = null;
+        if (divider > 0 && value.length() > divider) {
+            String startTime = value.substring(0, divider).trim();
+            String endTime = value.substring(divider + 1).trim();
             if (startTime.length() >= 3 && endTime.length() >= 3) {
                 try {
-                    LocalTime st = mTimeParser.parseLocalTime(startTime);
-                    LocalTime et = mTimeParser.parseLocalTime(endTime);
-                    isOk = true;
+                    Settings.TIME_FORMATTER.parseLocalTime(startTime);
+                    Settings.TIME_FORMATTER.parseLocalTime(endTime);
+                    result = new String[]{startTime, endTime};
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         }
-        mTextInputLayout.setErrorEnabled(!isOk);
-        if (!isOk) {
-            mTextInputLayout.setError(getString(R.string.err_invalid_time_range));
-        }
+        return result;
     }
 
     @OnClick(R.id.tone_play)
@@ -155,6 +197,15 @@ public class SoundSettingsFragment extends Fragment {
         @Override
         public long getItemId(int position) {
             return position;
+        }
+
+        public int getIndexOf(int toneValue) {
+            for (int i = 0, n = mData.size(); i < n; i++) {
+                if(mData.get(i).second == toneValue){
+                    return i;
+                }
+            }
+            return -1;
         }
 
         @Override

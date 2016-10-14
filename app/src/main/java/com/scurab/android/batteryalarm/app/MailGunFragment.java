@@ -1,16 +1,17 @@
-package com.scurab.android.batteryalarm.ui;
+package com.scurab.android.batteryalarm.app;
 
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.scurab.android.batteryalarm.R;
+import com.scurab.android.batteryalarm.model.Settings;
 import com.scurab.android.batteryalarm.util.MailGun;
 
 import butterknife.BindView;
@@ -21,7 +22,7 @@ import butterknife.OnClick;
  * Created by JBruchanov on 13/10/2016.
  */
 
-public class MailGunFragment extends Fragment {
+public class MailGunFragment extends BaseFragment {
 
     @BindView(R.id.mailgun_device_name)
     TextView mDeviceName;
@@ -38,6 +39,9 @@ public class MailGunFragment extends Fragment {
     @BindView(R.id.mailgun_send_test)
     TextView mSendButton;
 
+    @BindView(R.id.send_mail)
+    CheckBox mSendMailCheckBox;
+
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -48,6 +52,32 @@ public class MailGunFragment extends Fragment {
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         ButterKnife.bind(this, view);
+
+        bindData();
+    }
+
+    private void bindData() {
+        Settings settings = getSettings();
+        mDeviceName.setText(settings.getDeviceName());
+        mSendMailCheckBox.setChecked(settings.isMailNotification());
+        mKey.setText(settings.getMailGunKey());
+        mDomain.setText(settings.getMailGunDomain());
+        mRecipient.setText(settings.getMailGunRecipient());
+    }
+
+    private void saveData() {
+        Settings s = getSettings();
+        s.setDeviceName(mDeviceName.getText().toString());
+        s.setMailGunKey(nullIfEmpty(mKey.getText().toString()));
+        s.setMailGunDomain(nullIfEmpty(mDomain.getText().toString()));
+        s.setMailGunRecipient(nullIfEmpty(mRecipient.getText().toString()));
+        s.setMailNotification(mSendMailCheckBox.isChecked() && s.areMailDataEntered());
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        saveData();
     }
 
     @OnClick(R.id.mailgun_send_test)
