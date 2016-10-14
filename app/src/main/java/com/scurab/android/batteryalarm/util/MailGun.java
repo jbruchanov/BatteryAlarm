@@ -5,7 +5,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Base64;
 
-import org.apache.commons.io.IOUtils;
+import com.scurab.android.batteryalarm.BuildConfig;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -71,7 +71,7 @@ public class MailGun {
                 .append("from=").append(URLEncoder.encode("noreply@batteryalarm.com", UTF))
                 .append("&").append("to=").append(URLEncoder.encode(to, UTF))
                 .append("&").append("subject=").append(URLEncoder.encode("BatteryAlarm", UTF))
-                .append("&").append("text=").append(URLEncoder.encode(String.format("LowBattery on '%s'", deviceName), UTF))
+                .append("&").append("text=").append(URLEncoder.encode(String.format("LowBattery device:'%s'", deviceName), UTF))
                 .toString();
 
         byte[] postDataBytes = post.getBytes(UTF);
@@ -81,7 +81,10 @@ public class MailGun {
         conn.getOutputStream().write(postDataBytes);
         StringWriter sw = new StringWriter();
         copyLarge(new InputStreamReader(conn.getInputStream()), sw);
-        String result = sw.toString();
+        String result;
+        if (BuildConfig.DEBUG) {
+            result = sw.toString();
+        }
         return conn.getResponseCode() == 200;
     }
 
