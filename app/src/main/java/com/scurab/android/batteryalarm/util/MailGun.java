@@ -24,6 +24,10 @@ public class MailGun {
     static final String UTF = "UTF-8";
     static final String AUTHORIZATION_BASIC_X = "Basic %s";
     private static final int TIMEOUT = 5000;
+    static final String MSG_TEMPLATE = "<html><body style=\"font-family: Calibri;font-size:130%\">" +
+            "<div style=\"color:red; font-size:48px; margin:5px\">&#x26a0;</div>" +
+            "Low battery Device:<br/><b>$DEVICE$</b>" +
+            "</body><html>";
 
     public interface Callback {
         void onResult(Boolean response, Throwable ex);
@@ -71,7 +75,7 @@ public class MailGun {
                 .append("from=").append(URLEncoder.encode("noreply@batteryalarm.com", UTF))
                 .append("&").append("to=").append(URLEncoder.encode(to, UTF))
                 .append("&").append("subject=").append(URLEncoder.encode("BatteryAlarm", UTF))
-                .append("&").append("text=").append(URLEncoder.encode(String.format("LowBattery device:'%s'", deviceName), UTF))
+                .append("&").append("html=").append(URLEncoder.encode(MSG_TEMPLATE.replace("$DEVICE$", deviceName), UTF))
                 .toString();
 
         byte[] postDataBytes = post.getBytes(UTF);
