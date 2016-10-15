@@ -92,7 +92,7 @@ public class BatteryCheckerService extends Service {
     @Override
     public void onStart(Intent intent, int startId) {
         if (mBatteryThread == null) {
-            mBatteryThread = new BatteryThread(getApplicationContext(), 10000);
+            mBatteryThread = new BatteryThread(this, 10000);
             mBatteryThread.start();
         }
         showNotification();
@@ -131,20 +131,20 @@ public class BatteryCheckerService extends Service {
         private final Settings mSettings;
         private boolean mIsStopped = false;
         private final Object mToken = new Object();
-        private final Context mContext;
+        private final BatteryCheckerService mService;
         private int mMailNotificationState = MAIL_TO_SEND;
 
-        public BatteryThread(@NonNull Context context, int sleepWait) {
-            mContext = context;
+        public BatteryThread(@NonNull BatteryCheckerService service, int sleepWait) {
+            mService = service;
             mSleepWait = sleepWait;
-            mSettings = ((BatteryAlarmApp) (context.getApplicationContext())).getSettings();
+            mSettings = ((BatteryAlarmApp) (service.getApplicationContext())).getSettings();
             mToneGenerator = new ToneGenerator(AudioManager.STREAM_ALARM, mSettings.getToneVolume());
         }
 
         @Override
         public void run() {
             while (!mIsStopped) {
-                Log.d(TAG, String.format("BatteryLevel:%.2f, IsCharging:%s", BatteryHelper.getBatteryLevel(mContext), BatteryHelper.isCharging(mContext)));
+                Log.d(TAG, String.format("BatteryLevel:%.2f, IsCharging:%s", BatteryHelper.getBatteryLevel(mService), BatteryHelper.isCharging(mService)));
                 boolean sound = mSettings.isSoundNotification() && mSettings.shouldStartTone();
                 if (sound) {
                     mToneGenerator.startTone(mSettings.getToneValue(), 4000);
@@ -152,6 +152,13 @@ public class BatteryCheckerService extends Service {
                 if (mSettings.isMailNotification() && mMailNotificationState == MAIL_TO_SEND) {
                     mMailNotificationState = MAIL_SENDING;
                     MailGun.sendNotificationAsync(mSettings.getDeviceName(), mSettings.getMailGunKey(), mSettings.getMailGunDomain(), mSettings.getMailGunRecipient(), mMailCallback);
+                }
+                /*
+                    Weird case when charger is plugged out, but battery status is weird so it won't stop the service
+                    => explicit check and stop it if we charging
+                 */
+                if (BatteryHelper.isCharging(mService)) {
+                    mService.stopSelf();
                 }
                 sleep(sound ? mSleepWait : MINUTE);
             }
