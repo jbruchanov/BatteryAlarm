@@ -19,7 +19,7 @@ import java.io.OutputStream;
 
 public class BatteryAlarmApp extends Application {
 
-    private static final String SETTINGS_FILE_NAME = "BatteryAlarm.json";
+    public static final String SETTINGS_FILE_NAME = "BatteryAlarm.json";
 
     private Settings mSettings;
     private Gson mGson = new Gson();

@@ -33,6 +33,14 @@
         </receiver>
 
         <service android:name=".BatteryCheckerService" />
+
+        <provider
+            android:authorities="${applicationId}"
+            android:name=".app.DataProvider"
+            android:exported="true"
+            android:grantUriPermissions="true">
+            <grant-uri-permission android:pathPattern="/data/" />
+        </provider>
     </application>
 
 </manifest>
