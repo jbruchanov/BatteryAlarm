@@ -27,6 +27,7 @@ public class BatteryAlarmApp extends Application {
     public Settings getSettings() {
         if (mSettings == null) {
             mSettings = onLoadSettings();
+            onSaveSettings();
         }
         return mSettings;
     }
