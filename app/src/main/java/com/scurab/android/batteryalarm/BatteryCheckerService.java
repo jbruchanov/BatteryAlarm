@@ -133,6 +133,7 @@ public class BatteryCheckerService extends Service {
         private final Object mToken = new Object();
         private final BatteryCheckerService mService;
         private int mMailNotificationState = MAIL_TO_SEND;
+        private boolean mFirstTone = true;
 
         public BatteryThread(@NonNull BatteryCheckerService service, int sleepWait) {
             mService = service;
@@ -145,9 +146,10 @@ public class BatteryCheckerService extends Service {
         public void run() {
             while (!mIsStopped) {
                 Log.d(TAG, String.format("BatteryLevel:%.2f, IsCharging:%s", BatteryHelper.getBatteryLevel(mService), BatteryHelper.isCharging(mService)));
-                boolean sound = mSettings.isSoundNotification() && mSettings.shouldStartTone();
+                boolean sound = mSettings.isSoundNotification() && (mSettings.shouldStartTone() || mFirstTone);
                 if (sound) {
                     mToneGenerator.startTone(mSettings.getToneValue(), 4000);
+                    mFirstTone = false;
                 }
                 if (mSettings.isMailNotification() && mMailNotificationState == MAIL_TO_SEND) {
                     mMailNotificationState = MAIL_SENDING;
