@@ -16,5 +16,13 @@
     <string name="send_test_mail">Send test mail</string>
     <string name="send_test_mail_sending">Sending...</string>
     <string name="action_save">Save</string>
-    <string name="export_settings">Export settings</string>
+    <string name="export_settings">Export Settings</string>
+    <string name="sound">Sound</string>
+    <string name="mail">Mail</string>
+    <string name="about">About</string>
+    <string name="action_import">Import Settings</string>
+    <string name="action_export">Export Settings</string>
+    <string name="import_settings">Import Settings</string>
+    <string name="err_invalid_file_size">File seems to big to be BatteryAlarm settings</string>
+    <string name="err_unable_to_finish_op">Unable to finish operation</string>
 </resources>

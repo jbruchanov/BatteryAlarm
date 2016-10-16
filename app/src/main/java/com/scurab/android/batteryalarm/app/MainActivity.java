@@ -1,6 +1,5 @@
 package com.scurab.android.batteryalarm.app;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTabHost;
@@ -16,7 +15,6 @@ import com.scurab.android.batteryalarm.R;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import butterknife.OnLongClick;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -36,8 +34,9 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(mToolbar);
         ButterKnife.bind(this);
         mTabHost.setup(this, getSupportFragmentManager(), android.R.id.tabcontent);
-        mTabHost.addTab(mTabHost.newTabSpec(SoundSettingsFragment.class.getName()).setIndicator("Tone"), SoundSettingsFragment.class, null);
-        mTabHost.addTab(mTabHost.newTabSpec(MailGunFragment.class.getName()).setIndicator("Mail"), MailGunFragment.class, null);
+        mTabHost.addTab(mTabHost.newTabSpec(SoundSettingsFragment.class.getName()).setIndicator(getString(R.string.sound)), SoundSettingsFragment.class, null);
+        mTabHost.addTab(mTabHost.newTabSpec(MailGunFragment.class.getName()).setIndicator(getString(R.string.mail)), MailGunFragment.class, null);
+        mTabHost.addTab(mTabHost.newTabSpec(AboutFragment.class.getName()).setIndicator(getString(R.string.about)), AboutFragment.class, null);
     }
 
     @OnClick(R.id.action_save)
@@ -55,16 +54,5 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         ((BatteryAlarmApp) getApplication()).onSaveSettings();
-    }
-
-    @OnLongClick(R.id.action_save)
-    public boolean onExportData(View source) {
-        onSaveData();
-        Intent shareIntent = new Intent();
-        shareIntent.setAction(Intent.ACTION_SEND);
-        shareIntent.putExtra(Intent.EXTRA_STREAM, DataProvider.getShareIntentUri());
-        shareIntent.setType("application/json");
-        startActivity(Intent.createChooser(shareIntent, getString(R.string.export_settings)));
-        return true;
     }
 }

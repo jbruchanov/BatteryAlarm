@@ -31,6 +31,10 @@ public class BatteryAlarmApp extends Application {
         return mSettings;
     }
 
+    public void setSettings(Settings settings) {
+        mSettings = settings;
+    }
+
     public void onSaveSettings() {
         if (mSettings != null) {
             OutputStream os = null;
@@ -70,5 +74,9 @@ public class BatteryAlarmApp extends Application {
         }
 
         return Settings.defaultSettings();
+    }
+
+    public Gson getGson() {
+        return mGson;
     }
 }

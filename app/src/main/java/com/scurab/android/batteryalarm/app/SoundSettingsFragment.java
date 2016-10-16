@@ -85,7 +85,12 @@ public class SoundSettingsFragment extends BaseFragment {
         thumb.getTextPaint().setColor(res.getColor(R.color.colorAccentText));
         mToneVolume.setThumb(thumb);
         mToneVolume.setMax(ToneGenerator.MAX_VOLUME);
-        view.post(this::bindData);//for some weird reason must be posted, otherwise NPE in textview for spinner (Nexus4 seen)
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        getView().post(this::bindData);//for some weird reason must be posted, otherwise NPE in textview for spinner (Nexus4 seen)
     }
 
     @Override

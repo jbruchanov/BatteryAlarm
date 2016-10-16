@@ -138,7 +138,7 @@ public class BatteryCheckerService extends Service {
         public BatteryThread(@NonNull BatteryCheckerService service, int sleepWait) {
             mService = service;
             mSleepWait = sleepWait;
-            mSettings = ((BatteryAlarmApp) (service.getApplicationContext())).getSettings();
+            mSettings = ((BatteryAlarmApp) (service.getApplicationContext())).onLoadSettings();
             mToneGenerator = new ToneGenerator(AudioManager.STREAM_ALARM, mSettings.getToneVolume());
         }
 
