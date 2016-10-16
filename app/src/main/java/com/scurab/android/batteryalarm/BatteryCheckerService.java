@@ -29,6 +29,8 @@ public class BatteryCheckerService extends Service {
 
     public static final String ACTION_START_CHECKING = "com.scurab.android.batteryalarm.START_CHECKING";
     public static final String ACTION_STOP_CHECKING = "com.scurab.android.batteryalarm.STOP_CHECKING";
+    public static final String ACTION_WAIT_WITH_CHECKING = "com.scurab.android.batteryalarm.WAIT_WITH_CHECKING";
+    public static final int TIME_15_MINS = 15 * 60 * 1000;
     private static final int ID_NOTIFICATION = 0xA1;
     private BatteryThread mBatteryThread;
     private PowerManager.WakeLock mWakeLock;
@@ -75,6 +77,12 @@ public class BatteryCheckerService extends Service {
         if (ACTION_START_CHECKING.equals(action)) {
             onStart(intent, startId);
             return START_STICKY;
+        } else if (ACTION_WAIT_WITH_CHECKING.equals(action)) {
+            if (mBatteryThread != null) {
+                mBatteryThread.waitFor(TIME_15_MINS);
+            }
+            showNotification();
+            return START_STICKY;
         } else if (ACTION_STOP_CHECKING.equals(action)) {
             stopSelf();
         }
@@ -102,14 +110,17 @@ public class BatteryCheckerService extends Service {
         Context context = getApplicationContext();
         String value = String.format("BatteryLevel:%.2f, IsCharging:%s", BatteryHelper.getBatteryLevel(context), BatteryHelper.isCharging(context));
         PendingIntent stopIntent = PendingIntent.getService(context, 1, new Intent(context, BatteryCheckerService.class).setAction(ACTION_STOP_CHECKING), PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent silenceIntent = PendingIntent.getService(context, 1, new Intent(context, BatteryCheckerService.class).setAction(ACTION_WAIT_WITH_CHECKING), PendingIntent.FLAG_UPDATE_CURRENT);
 
         Notification notification = new NotificationCompat.Builder(this)
                 .setContentTitle(getString(R.string.app_name))
                 .setAutoCancel(false)
+                .setOngoing(true)
                 .setDefaults(Notification.DEFAULT_LIGHTS)
                 .setContentText(value)
                 .setContentIntent(PendingIntent.getActivity(context, 1, new Intent(this, MainActivity.class), PendingIntent.FLAG_UPDATE_CURRENT))
                 .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                .addAction(android.R.drawable.ic_menu_help, getString(R.string.silent_for_next_15mins), silenceIntent)
                 .addAction(android.R.drawable.ic_menu_close_clear_cancel, getString(R.string.stop), stopIntent)
                 .build();
         ((NotificationManager) getSystemService(NOTIFICATION_SERVICE)).notify(ID_NOTIFICATION, notification);
@@ -134,6 +145,7 @@ public class BatteryCheckerService extends Service {
         private final BatteryCheckerService mService;
         private int mMailNotificationState = MAIL_TO_SEND;
         private boolean mFirstTone = true;
+        private int mWaitFor;
 
         public BatteryThread(@NonNull BatteryCheckerService service, int sleepWait) {
             mService = service;
@@ -146,23 +158,31 @@ public class BatteryCheckerService extends Service {
         public void run() {
             while (!mIsStopped) {
                 Log.d(TAG, String.format("BatteryLevel:%.2f, IsCharging:%s", BatteryHelper.getBatteryLevel(mService), BatteryHelper.isCharging(mService)));
-                boolean sound = mSettings.isSoundNotification() && (mSettings.shouldStartTone() || mFirstTone);
-                if (sound) {
-                    mToneGenerator.startTone(mSettings.getToneValue(), 4000);
-                    mFirstTone = false;
+                while (mWaitFor != 0) {
+                    int v = mWaitFor;
+                    mWaitFor = 0;//must be before sleep, can be overwritten during sleeping
+                    sleep(v);
                 }
-                if (mSettings.isMailNotification() && mMailNotificationState == MAIL_TO_SEND) {
-                    mMailNotificationState = MAIL_SENDING;
-                    MailGun.sendNotificationAsync(mSettings.getDeviceName(), mSettings.getMailGunKey(), mSettings.getMailGunDomain(), mSettings.getMailGunRecipient(), mMailCallback);
-                }
+
+                if (!mIsStopped) {
+                    boolean sound = mSettings.isSoundNotification() && (mSettings.shouldStartTone() || mFirstTone);
+                    if (sound) {
+                        mToneGenerator.startTone(mSettings.getToneValue(), 4000);
+                        mFirstTone = false;
+                    }
+                    if (mSettings.isMailNotification() && mMailNotificationState == MAIL_TO_SEND) {
+                        mMailNotificationState = MAIL_SENDING;
+                        MailGun.sendNotificationAsync(mSettings.getDeviceName(), mSettings.getMailGunKey(), mSettings.getMailGunDomain(), mSettings.getMailGunRecipient(), mMailCallback);
+                    }
                 /*
                     Weird case when charger is plugged out, but battery status is weird so it won't stop the service
                     => explicit check and stop it if we charging
                  */
-                if (BatteryHelper.isCharging(mService)) {
-                    mService.stopSelf();
+                    if (BatteryHelper.isCharging(mService)) {
+                        mService.stopSelf();
+                    }
+                    sleep(sound ? mSleepWait : MINUTE);
                 }
-                sleep(sound ? mSleepWait : MINUTE);
             }
             mToneGenerator.release();
             if (BuildConfig.DEBUG) {
@@ -196,5 +216,12 @@ public class BatteryCheckerService extends Service {
         }
 
         private MailGun.Callback mMailCallback = (response, ex) -> mMailNotificationState = response ? MAIL_SENT : MAIL_TO_SEND;
+
+        public void waitFor(int secs) {
+            mWaitFor = secs;
+            synchronized (mToken) {
+                mToken.notifyAll();
+            }
+        }
     }
 }

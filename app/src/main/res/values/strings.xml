@@ -25,4 +25,5 @@
     <string name="import_settings">Import Settings</string>
     <string name="err_invalid_file_size">File seems to big to be BatteryAlarm settings</string>
     <string name="err_unable_to_finish_op">Unable to finish operation</string>
+    <string name="silent_for_next_15mins">15 mins</string>
 </resources>
