@@ -3,4 +3,5 @@
     <dimen name="gap_small">8dp</dimen>
     <dimen name="button_min_size">48dp</dimen>
     <dimen name="seek_bar_thumb_size">28dp</dimen>
+    <dimen name="tabs_divider_height">0dp</dimen>
 </resources>

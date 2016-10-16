@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">BatteryAlarm</string>
+    <string name="app_name">Battery Alarm</string>
     <string name="stop">Stop</string>
     <string name="sound_notification">Sound Notification</string>
     <string name="tone">Tone</string>
@@ -15,4 +15,5 @@
     <string name="mailgun_recepient">Recepient</string>
     <string name="send_test_mail">Send test mail</string>
     <string name="send_test_mail_sending">Sending...</string>
+    <string name="action_save">Save</string>
 </resources>
