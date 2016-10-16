@@ -1,38 +1,70 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.v4.app.FragmentTabHost
-    android:id="@android:id/tabhost"
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true"
-    tools:context="com.scurab.android.batteryalarm.app.MainActivity">
+    android:orientation="vertical">
 
-    <LinearLayout
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorPrimary"
+        android:elevation="4dp"
+        android:theme="@style/ThemeOverlay.AppCompat.ActionBar"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Dark"
+        app:title="@string/app_name"
+        app:titleTextColor="@color/colorAccentText">
 
-        <TabWidget
-            android:id="@android:id/tabs"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:showDividers="none"
-            />
+        <Button
+            android:id="@+id/action_save"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="right"
+            android:background="@drawable/menu_button_background"
+            android:textColor="@color/colorAccentText"
+            android:text="@string/action_save"/>
+    </android.support.v7.widget.Toolbar>
 
-        <ScrollView
+    <android.support.v4.app.FragmentTabHost
+        android:id="@android:id/tabhost"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fitsSystemWindows="true"
+        tools:context="com.scurab.android.batteryalarm.app.MainActivity">
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:fillViewport="true">
+            android:orientation="vertical">
 
-            <FrameLayout
-                android:id="@android:id/tabcontent"
+            <TabWidget
+                android:id="@android:id/tabs"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="@dimen/gap_small"
-                tools:background="#8F00"
+                android:showDividers="none"
                 />
-        </ScrollView>
-    </LinearLayout>
-</android.support.v4.app.FragmentTabHost>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/tabs_divider_height"
+                android:background="@color/colorAccent" />
+
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:fillViewport="true">
+
+                <FrameLayout
+                    android:id="@android:id/tabcontent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/gap_small"
+                    tools:background="#8F00"
+                    />
+            </ScrollView>
+        </LinearLayout>
+    </android.support.v4.app.FragmentTabHost>
+</LinearLayout>

@@ -106,7 +106,7 @@ public class SoundSettingsFragment extends BaseFragment {
         mWeekends.setChecked(settings.isWeekends());
     }
 
-    private void saveData() {
+    protected void saveData() {
         Settings settings = getSettings();
         settings.setSoundNotification(mSoundNotification.isChecked());
         ToneAdapter adapter = (ToneAdapter) mToneSpinner.getAdapter();

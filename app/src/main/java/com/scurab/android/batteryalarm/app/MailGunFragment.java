@@ -65,7 +65,7 @@ public class MailGunFragment extends BaseFragment {
         mRecipient.setText(settings.getMailGunRecipient());
     }
 
-    private void saveData() {
+    protected void saveData() {
         Settings s = getSettings();
         s.setDeviceName(mDeviceName.getText().toString());
         s.setMailGunKey(nullIfEmpty(mKey.getText().toString()));

@@ -10,7 +10,7 @@ import com.scurab.android.batteryalarm.model.Settings;
  * Created by JBruchanov on 14/10/2016.
  */
 
-public class BaseFragment extends Fragment {
+public abstract class BaseFragment extends Fragment {
 
     private Settings mSettings;
 
@@ -23,6 +23,8 @@ public class BaseFragment extends Fragment {
     protected Settings getSettings() {
         return mSettings;
     }
+
+    protected abstract void saveData();
 
     static String nullIfEmpty(String value) {
         return value == null || value.length() == 0 ? null : value;
