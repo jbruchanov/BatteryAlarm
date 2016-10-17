@@ -48,7 +48,7 @@ public class BatteryHelper {
     }
 
     public static boolean shouldStartService(@NonNull Context context, @Nullable Intent intent) {
-        return !isCharging(context)/* && isBatteryLow(context, intent)*/;
+        return !isCharging(context) && isBatteryLow(context, intent);
     }
 
     public static boolean shouldStopService(@NonNull Context context, @Nullable Intent intent) {
