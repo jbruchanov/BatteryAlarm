@@ -41,14 +41,14 @@ public class BatteryHelper {
             if (status != -1 && plugged != -1) {
                 boolean isNotCharging = !(status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL);
                 boolean isPlugged = plugged != 0;
-                return !isNotCharging && isPlugged;
+                return isPlugged /*&& !isNotCharging*/;
             }
         }
         return null;
     }
 
     public static boolean shouldStartService(@NonNull Context context, @Nullable Intent intent) {
-        return !isCharging(context) && isBatteryLow(context, intent);
+        return !isCharging(context)/* && isBatteryLow(context, intent)*/;
     }
 
     public static boolean shouldStopService(@NonNull Context context, @Nullable Intent intent) {
