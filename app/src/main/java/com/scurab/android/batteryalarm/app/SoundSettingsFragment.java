@@ -1,5 +1,6 @@
 package com.scurab.android.batteryalarm.app;
 
+import android.content.Context;
 import android.content.res.Resources;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
@@ -167,6 +168,12 @@ public class SoundSettingsFragment extends BaseFragment {
             }
             mToneGenerator = new ToneGenerator(AudioManager.STREAM_ALARM, vol);
             mLastPlayedVolume = vol;
+        }
+
+        AudioManager manager = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
+        int oldValue = manager.getStreamVolume(AudioManager.STREAM_ALARM);
+        if (oldValue == 0) {
+            manager.setStreamVolume(AudioManager.STREAM_ALARM, 1, 0);
         }
         mToneGenerator.startTone(item.second, 4000);
     }

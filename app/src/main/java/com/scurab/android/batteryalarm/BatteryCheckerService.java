@@ -6,6 +6,8 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
 import android.net.wifi.WifiManager;
@@ -14,6 +16,7 @@ import android.os.PowerManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.scurab.android.batteryalarm.app.MainActivity;
@@ -21,26 +24,38 @@ import com.scurab.android.batteryalarm.model.Settings;
 import com.scurab.android.batteryalarm.util.BatteryHelper;
 import com.scurab.android.batteryalarm.util.MailGun;
 
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+
 /**
  * Created by JBruchanov on 11/10/2016.
  */
 
 public class BatteryCheckerService extends Service {
 
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormat.forPattern("HH:mm:ss");
     public static final String ACTION_START_CHECKING = "com.scurab.android.batteryalarm.START_CHECKING";
     public static final String ACTION_STOP_CHECKING = "com.scurab.android.batteryalarm.STOP_CHECKING";
     public static final String ACTION_WAIT_WITH_CHECKING = "com.scurab.android.batteryalarm.WAIT_WITH_CHECKING";
+    private static final int BATTERY_MUTLIPLICATOR = 100;
     public static final int TIME_15_MINS = 15 * 60 * 1000;
     private static final int ID_NOTIFICATION = 0xA1;
     private BatteryThread mBatteryThread;
     private PowerManager.WakeLock mWakeLock;
     private WifiManager.WifiLock mWifiLock;
+    private AudioManager mAudioManager;
+    private int mInitAudioStreamVolume = -1;
 
     @Override
     public void onCreate() {
         super.onCreate();
         mWakeLock = ((PowerManager) getSystemService(POWER_SERVICE)).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "BatteryCheckerService");
         mWifiLock = ((WifiManager) getSystemService(WIFI_SERVICE)).createWifiLock(WifiManager.WIFI_MODE_FULL, "BatteryCheckerService");
+        mAudioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        if ((mInitAudioStreamVolume = mAudioManager.getStreamVolume(AudioManager.STREAM_ALARM)) == 0) {
+            mAudioManager.setStreamVolume(AudioManager.STREAM_ALARM, 1, 0);//volume 1 seems fine to be able play a it
+        }
         mWakeLock.acquire();
     }
 
@@ -63,6 +78,9 @@ public class BatteryCheckerService extends Service {
             }
             mWifiLock = null;
         }
+        if (mInitAudioStreamVolume != mAudioManager.getStreamVolume(AudioManager.STREAM_ALARM)) {
+            mAudioManager.setStreamVolume(AudioManager.STREAM_ALARM, mInitAudioStreamVolume, 0);
+        }
     }
 
     @Nullable
@@ -80,8 +98,9 @@ public class BatteryCheckerService extends Service {
         } else if (ACTION_WAIT_WITH_CHECKING.equals(action)) {
             if (mBatteryThread != null) {
                 mBatteryThread.waitFor(TIME_15_MINS);
+                String time = DateTime.now().plusMillis(TIME_15_MINS).toString(TIME_FORMATTER);
+                showNotification(getString(R.string.restart_x, time));
             }
-            showNotification();
             return START_STICKY;
         } else if (ACTION_STOP_CHECKING.equals(action)) {
             stopSelf();
@@ -107,8 +126,15 @@ public class BatteryCheckerService extends Service {
     }
 
     private void showNotification() {
+        showNotification(null);
+    }
+
+    private void showNotification(@Nullable String subText) {
         Context context = getApplicationContext();
-        String value = String.format("BatteryLevel:%.2f, IsCharging:%s", BatteryHelper.getBatteryLevel(context), BatteryHelper.isCharging(context));
+        String value = context.getString(R.string.battery_level_x, Integer.toString((int) (BatteryHelper.getBatteryLevel(context) * BATTERY_MUTLIPLICATOR)));
+        if (!TextUtils.isEmpty(subText)) {
+            value += ", " + subText;
+        }
         PendingIntent stopIntent = PendingIntent.getService(context, 1, new Intent(context, BatteryCheckerService.class).setAction(ACTION_STOP_CHECKING), PendingIntent.FLAG_UPDATE_CURRENT);
         PendingIntent silenceIntent = PendingIntent.getService(context, 1, new Intent(context, BatteryCheckerService.class).setAction(ACTION_WAIT_WITH_CHECKING), PendingIntent.FLAG_UPDATE_CURRENT);
 
@@ -116,10 +142,11 @@ public class BatteryCheckerService extends Service {
                 .setContentTitle(getString(R.string.app_name))
                 .setAutoCancel(false)
                 .setOngoing(true)
-                .setDefaults(Notification.DEFAULT_LIGHTS)
+                .setLights(Color.RED, 1000, 1000)
                 .setContentText(value)
                 .setContentIntent(PendingIntent.getActivity(context, 1, new Intent(this, MainActivity.class), PendingIntent.FLAG_UPDATE_CURRENT))
                 .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher))
                 .addAction(android.R.drawable.ic_menu_help, getString(R.string.silent_for_next_15mins), silenceIntent)
                 .addAction(android.R.drawable.ic_menu_close_clear_cancel, getString(R.string.stop), stopIntent)
                 .build();
@@ -146,41 +173,50 @@ public class BatteryCheckerService extends Service {
         private int mMailNotificationState = MAIL_TO_SEND;
         private boolean mFirstTone = true;
         private int mWaitFor;
+        private int mLastBatteryLevel;
 
         public BatteryThread(@NonNull BatteryCheckerService service, int sleepWait) {
             mService = service;
             mSleepWait = sleepWait;
             mSettings = ((BatteryAlarmApp) (service.getApplicationContext())).onLoadSettings();
             mToneGenerator = new ToneGenerator(AudioManager.STREAM_ALARM, mSettings.getToneVolume());
+            mLastBatteryLevel = (int) (BatteryHelper.getBatteryLevel(service.getApplicationContext()) * BATTERY_MUTLIPLICATOR);
         }
 
         @Override
         public void run() {
             while (!mIsStopped) {
                 Log.d(TAG, String.format("BatteryLevel:%.2f, IsCharging:%s", BatteryHelper.getBatteryLevel(mService), BatteryHelper.isCharging(mService)));
+                boolean forceNotificationUpdate = false;
                 while (mWaitFor != 0) {
                     int v = mWaitFor;
                     mWaitFor = 0;//must be before sleep, can be overwritten during sleeping
                     sleep(v);
+                    forceNotificationUpdate = true;
                 }
 
                 if (!mIsStopped) {
+                    /*
+                        Weird case when charger is plugged out, but battery status is weird so it won't stop the service
+                        => explicit check and stop it if we charging
+                     */
+                    if (BatteryHelper.isCharging(mService)) {
+                        mService.stopSelf();
+                    }
                     boolean sound = mSettings.isSoundNotification() && (mSettings.shouldStartTone() || mFirstTone);
                     if (sound) {
-                        mToneGenerator.startTone(mSettings.getToneValue(), 4000);
+                        playSound();
                         mFirstTone = false;
                     }
                     if (mSettings.isMailNotification() && mMailNotificationState == MAIL_TO_SEND) {
                         mMailNotificationState = MAIL_SENDING;
                         MailGun.sendNotificationAsync(mSettings.getDeviceName(), mSettings.getMailGunKey(), mSettings.getMailGunDomain(), mSettings.getMailGunRecipient(), mMailCallback);
                     }
-                /*
-                    Weird case when charger is plugged out, but battery status is weird so it won't stop the service
-                    => explicit check and stop it if we charging
-                 */
-                    if (BatteryHelper.isCharging(mService)) {
-                        mService.stopSelf();
+                    int batteryLevel = (int) (BatteryHelper.getBatteryLevel(mService.getApplicationContext()) * BATTERY_MUTLIPLICATOR);
+                    if (forceNotificationUpdate || batteryLevel != mLastBatteryLevel) {
+                        mService.showNotification();
                     }
+                    mLastBatteryLevel = batteryLevel;
                     sleep(sound ? mSleepWait : MINUTE);
                 }
             }
@@ -188,6 +224,10 @@ public class BatteryCheckerService extends Service {
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "BatteryThread quit");
             }
+        }
+
+        private void playSound() {
+            mToneGenerator.startTone(mSettings.getToneValue(), 4000);
         }
 
         private void sleep(int time) {
@@ -208,6 +248,7 @@ public class BatteryCheckerService extends Service {
 
         public void quit() {
             if (!mIsStopped) {
+                mToneGenerator.stopTone();
                 synchronized (mToken) {
                     mIsStopped = true;
                     mToken.notifyAll();
