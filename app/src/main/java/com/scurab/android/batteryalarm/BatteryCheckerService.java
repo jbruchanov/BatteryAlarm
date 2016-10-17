@@ -53,9 +53,8 @@ public class BatteryCheckerService extends Service {
         mWakeLock = ((PowerManager) getSystemService(POWER_SERVICE)).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "BatteryCheckerService");
         mWifiLock = ((WifiManager) getSystemService(WIFI_SERVICE)).createWifiLock(WifiManager.WIFI_MODE_FULL, "BatteryCheckerService");
         mAudioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        if ((mInitAudioStreamVolume = mAudioManager.getStreamVolume(AudioManager.STREAM_ALARM)) == 0) {
-            mAudioManager.setStreamVolume(AudioManager.STREAM_ALARM, 1, 0);//volume 1 seems fine to be able play a it
-        }
+        mInitAudioStreamVolume = mAudioManager.getStreamVolume(AudioManager.STREAM_ALARM);
+        mAudioManager.setStreamVolume(AudioManager.STREAM_ALARM, mAudioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM), 0);
         mWakeLock.acquire();
     }
 

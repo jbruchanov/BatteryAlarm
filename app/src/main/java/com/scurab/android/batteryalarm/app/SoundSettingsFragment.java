@@ -171,10 +171,7 @@ public class SoundSettingsFragment extends BaseFragment {
         }
 
         AudioManager manager = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
-        int oldValue = manager.getStreamVolume(AudioManager.STREAM_ALARM);
-        if (oldValue == 0) {
-            manager.setStreamVolume(AudioManager.STREAM_ALARM, 1, 0);
-        }
+        manager.setStreamVolume(AudioManager.STREAM_ALARM, manager.getStreamMaxVolume(AudioManager.STREAM_ALARM), 0);
         mToneGenerator.startTone(item.second, 4000);
     }
 
