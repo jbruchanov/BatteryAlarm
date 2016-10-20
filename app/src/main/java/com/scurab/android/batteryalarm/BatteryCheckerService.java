@@ -180,43 +180,48 @@ public class BatteryCheckerService extends Service {
             mSettings = ((BatteryAlarmApp) (service.getApplicationContext())).onLoadSettings();
             mToneGenerator = new ToneGenerator(AudioManager.STREAM_ALARM, mSettings.getToneVolume());
             mLastBatteryLevel = (int) (BatteryHelper.getBatteryLevel(service.getApplicationContext()) * BATTERY_MUTLIPLICATOR);
+            setName("BatteryCheckerServiceThread");
         }
 
         @Override
         public void run() {
             while (!mIsStopped) {
-                Log.d(TAG, String.format("BatteryLevel:%.2f, IsCharging:%s", BatteryHelper.getBatteryLevel(mService), BatteryHelper.isCharging(mService)));
-                boolean forceNotificationUpdate = false;
-                while (mWaitFor != 0) {
-                    int v = mWaitFor;
-                    mWaitFor = 0;//must be before sleep, can be overwritten during sleeping
-                    sleep(v);
-                    forceNotificationUpdate = true;
-                }
+                try {
+                    Log.d(TAG, String.format("BatteryLevel:%.2f, IsCharging:%s", BatteryHelper.getBatteryLevel(mService), BatteryHelper.isCharging(mService)));
+                    boolean forceNotificationUpdate = false;
+                    while (mWaitFor != 0) {
+                        int v = mWaitFor;
+                        mWaitFor = 0;//must be before sleep, can be overwritten during sleeping
+                        sleep(v);
+                        forceNotificationUpdate = true;
+                    }
 
-                if (!mIsStopped) {
-                    /*
-                        Weird case when charger is plugged out, but battery status is weird so it won't stop the service
-                        => explicit check and stop it if we charging
-                     */
-                    if (BatteryHelper.isCharging(mService)) {
-                        mService.stopSelf();
+                    if (!mIsStopped) {
+                        /*
+                            Weird case when charger is plugged out, but battery status is weird so it won't stop the service
+                            => explicit check and stop it if we charging
+                         */
+                        if (BatteryHelper.isCharging(mService)) {
+                            mService.stopSelf();
+                        }
+                        boolean sound = mSettings.isSoundNotification() && (mSettings.shouldStartTone() || mFirstTone);
+                        if (sound) {
+                            playSound();
+                            mFirstTone = false;
+                        }
+                        if (mSettings.isMailNotification() && mMailNotificationState == MAIL_TO_SEND) {
+                            mMailNotificationState = MAIL_SENDING;
+                            MailGun.sendNotificationAsync(mSettings.getDeviceName(), mSettings.getMailGunKey(), mSettings.getMailGunDomain(), mSettings.getMailGunRecipient(), mMailCallback);
+                        }
+                        int batteryLevel = (int) (BatteryHelper.getBatteryLevel(mService.getApplicationContext()) * BATTERY_MUTLIPLICATOR);
+                        if (forceNotificationUpdate || batteryLevel != mLastBatteryLevel) {
+                            mService.showNotification();
+                        }
+                        mLastBatteryLevel = batteryLevel;
+                        sleep(sound ? mSleepWait : MINUTE);
                     }
-                    boolean sound = mSettings.isSoundNotification() && (mSettings.shouldStartTone() || mFirstTone);
-                    if (sound) {
-                        playSound();
-                        mFirstTone = false;
-                    }
-                    if (mSettings.isMailNotification() && mMailNotificationState == MAIL_TO_SEND) {
-                        mMailNotificationState = MAIL_SENDING;
-                        MailGun.sendNotificationAsync(mSettings.getDeviceName(), mSettings.getMailGunKey(), mSettings.getMailGunDomain(), mSettings.getMailGunRecipient(), mMailCallback);
-                    }
-                    int batteryLevel = (int) (BatteryHelper.getBatteryLevel(mService.getApplicationContext()) * BATTERY_MUTLIPLICATOR);
-                    if (forceNotificationUpdate || batteryLevel != mLastBatteryLevel) {
-                        mService.showNotification();
-                    }
-                    mLastBatteryLevel = batteryLevel;
-                    sleep(sound ? mSleepWait : MINUTE);
+                } catch (Throwable e) {
+                    e.printStackTrace();
                 }
             }
             mToneGenerator.release();
