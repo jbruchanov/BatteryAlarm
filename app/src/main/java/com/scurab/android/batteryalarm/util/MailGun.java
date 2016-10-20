@@ -30,7 +30,7 @@ public class MailGun {
             "</body><html>";
 
     public interface Callback {
-        void onResult(Boolean response, Throwable ex);
+        void onResult(boolean response, Throwable ex);
     }
 
     public static void sendNotificationAsync(@NonNull String deviceName, @NonNull String key, @NonNull String domain, @NonNull String to) {
@@ -46,6 +46,7 @@ public class MailGun {
                 try {
                     return sendNotification(deviceName, key, domain, to);
                 } catch (Throwable ex) {
+                    ex.printStackTrace();
                     mThrowable = ex;
                 }
                 return null;
@@ -54,7 +55,7 @@ public class MailGun {
             @Override
             protected void onPostExecute(Boolean clientResponse) {
                 if (callback != null) {
-                    callback.onResult(clientResponse, mThrowable);
+                    callback.onResult(clientResponse != null && clientResponse, mThrowable);
                 }
             }
         }.execute();
